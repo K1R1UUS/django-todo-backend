@@ -14,43 +14,43 @@
 - djangorestframework 3.14+
 
 ## 🔧 Установка и запуск
-Python_Backend_Plan.md 2026-01-11
-12 / 18
+
 
 ### 1. Клонируйте репозиторий
-\`\`\`bash
+
 git clone https://github.com/YOUR_USERNAME/django-todo-backend.git
 cd django-todo-backend
-\`\`\`
+
 
 ### 2. Создайте виртуальное окружение
-\`\`\`bash
-python -m venv venv
-source venv/bin/activate # Для macOS/Linux
 
-# или
-venv\\Scripts\\activate # Для Windows
-\`\`\`
+#### Для macOS/Linux
+python -m venv venv
+source venv/bin/activate 
+
+#### Для Windows
+venv\\Scripts\\activate
+
 
 ### 3. Установите зависимости
-\`\`\`bash
+
 pip install -r requirements.txt
-\`\`\`
+
 
 ### 4. Выполните миграции
-\`\`\`bash
+
 python manage.py migrate
-\`\`\`
+
 
 ### 5. Создайте суперпользователя
-\`\`\`bash
+
 python manage.py createsuperuser
-\`\`\`
+
 
 ### 6. Запустите сервер
-\`\`\`bash
+
 python manage.py runserver
-\`\`\`
+
 Откройте http://127.0.0.1:8000/admin/
 
 ## 📚 Что изучено на этой неделе
@@ -68,8 +68,8 @@ python manage.py runserver
 4. Задеплоить на боевой сервер
 
 ## 📝 Заметки
-Python_Backend_Plan.md 2026-01-11
-13 / 18
+ 
+
 Это мой первый Django проект для обучения. Любые комментарии и предложения
 приветствуются!
 
