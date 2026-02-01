@@ -162,19 +162,13 @@ curl -X DELETE http://127.0.0.1:8000/api/tasks/1/
 План (вдохновлён учебным роадмапом):
 
   - [x] JWT токены (djangorestframework-simplejwt), логин/refresh.
-
   - [] Permissions:
-        - [] защитить эндпоинты,
-        - [] сделать “задачи только свои” (привязка к пользователю).
-
+    - [] защитить эндпоинты,
+    - [] сделать “задачи только свои” (привязка к пользователю).
   - [] PostgreSQL (переезд с SQLite).
-
   - [] Тесты API (unit/integration).
-
   - [] Документация API (Swagger/OpenAPI).
-
   - [] Deployment (Render/Railway), переменные окружения, HTTPS, CORS.
-
   - [] Отдельный frontend (React/Vue/Next) и интеграция с этим API.
 
 Контакты
