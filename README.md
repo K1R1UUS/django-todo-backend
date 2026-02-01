@@ -41,37 +41,37 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 
 ## Быстрый старт
 ### 1) Клонировать репозиторий
-bash
-git clone https://github.com/K1R1UUS/django-todo-backend.git
-cd django-todo-backend
+
+    git clone https://github.com/K1R1UUS/django-todo-backend.git
+    cd django-todo-backend
 
 ### 2) Создать и активировать venv
 
 #### Windows:
 
-python -m venv venv
-venv\Scripts\activate
+    python -m venv venv
+    venv\Scripts\activate
 
 #### macOS/Linux:
 
-python -m venv venv
-source venv/bin/activate
+    python -m venv venv
+    source venv/bin/activate
 
 ### 3) Установить зависимости
 
-pip install -r requirements.txt
+    pip install -r requirements.txt
 
 ### 4) Применить миграции
 
-python manage.py migrate
+    python manage.py migrate
 
 ### 5) Создать суперпользователя
 
-python manage.py createsuperuser
+    python manage.py createsuperuser
 
 ### 6) Запустить сервер
 
-python manage.py runserver
+    python manage.py runserver
 
 ## Основные URL
 
@@ -143,17 +143,17 @@ curl -X DELETE http://127.0.0.1:8000/api/tasks/1/
 ## Разработка
 ### Полезные команды
 
-    - [Создать миграции:]
+- [Создать миграции:]
 
-        python manage.py makemigrations
+    python manage.py makemigrations
 
-    - [Применить миграции:]
+- [Применить миграции:]
 
-        python manage.py migrate
+    python manage.py migrate
 
-    - [Проверить проект:]
+- [Проверить проект:]
 
-        python manage.py check
+    python manage.py check
 
 ## Git
 
@@ -161,23 +161,21 @@ curl -X DELETE http://127.0.0.1:8000/api/tasks/1/
 
 План (вдохновлён учебным роадмапом):
 
-    JWT токены (djangorestframework-simplejwt), логин/refresh.
+  - [] JWT токены (djangorestframework-simplejwt), логин/refresh.
 
-    Permissions:
+  - [] Permissions:
+        - [] защитить эндпоинты,
+        - [] сделать “задачи только свои” (привязка к пользователю).
 
-        защитить эндпоинты,
+  - [] PostgreSQL (переезд с SQLite).
 
-        сделать “задачи только свои” (привязка к пользователю).
+  - [] Тесты API (unit/integration).
 
-    PostgreSQL (переезд с SQLite).
+  - [] Документация API (Swagger/OpenAPI).
 
-    Тесты API (unit/integration).
+  - [] Deployment (Render/Railway), переменные окружения, HTTPS, CORS.
 
-    Документация API (Swagger/OpenAPI).
-
-    Deployment (Render/Railway), переменные окружения, HTTPS, CORS.
-
-    Отдельный frontend (React/Vue/Next) и интеграция с этим API.
+  - [] Отдельный frontend (React/Vue/Next) и интеграция с этим API.
 
 Контакты
 
