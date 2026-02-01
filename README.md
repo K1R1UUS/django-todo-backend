@@ -45,41 +45,35 @@ bash
 git clone https://github.com/K1R1UUS/django-todo-backend.git
 cd django-todo-backend
 
-2) Создать и активировать venv
+### 2) Создать и активировать venv
 
-Windows:
+#### Windows:
 
-bash
 python -m venv venv
 venv\Scripts\activate
 
-macOS/Linux:
+#### macOS/Linux:
 
-bash
 python -m venv venv
 source venv/bin/activate
 
-3) Установить зависимости
+### 3) Установить зависимости
 
-bash
 pip install -r requirements.txt
 
-4) Применить миграции
+### 4) Применить миграции
 
-bash
 python manage.py migrate
 
-5) Создать суперпользователя
+### 5) Создать суперпользователя
 
-bash
 python manage.py createsuperuser
 
-6) Запустить сервер
+### 6) Запустить сервер
 
-bash
 python manage.py runserver
 
-Основные URL
+## Основные URL
 
     Admin: http://127.0.0.1:8000/admin/
 
@@ -89,8 +83,8 @@ python manage.py runserver
 
     Важно: UI на /api/ — это DRF Browsable API (удобный интерфейс для тестирования API), не “пользовательский фронтенд”.
 
-API эндпоинты
-Tasks
+## API эндпоинты
+### Tasks
 
     GET /api/tasks/ — список задач (с пагинацией).
 
@@ -104,7 +98,7 @@ Tasks
 
     DELETE /api/tasks/{id}/ — удалить задачу.
 
-Query-параметры
+### Query-параметры
 
     Пагинация:
 
@@ -124,59 +118,46 @@ Query-параметры
 
         GET /api/tasks/?search=молоко
 
-Примеры запросов
-Создать задачу (POST)
+### Примеры запросов
+#### Создать задачу (POST)
 
-bash
 curl -X POST http://127.0.0.1:8000/api/tasks/ \
   -H "Content-Type: application/json" \
   -d "{\"title\":\"Купить молоко\",\"description\":\"2 литра\",\"status\":\"todo\"}"
 
-Список задач (GET)
+#### Список задач (GET)
 
-bash
+
 curl http://127.0.0.1:8000/api/tasks/
 
-Обновить статус (PATCH)
+#### Обновить статус (PATCH)
 
-bash
 curl -X PATCH http://127.0.0.1:8000/api/tasks/1/ \
   -H "Content-Type: application/json" \
   -d "{\"status\":\"done\"}"
 
-Удалить задачу (DELETE)
+#### Удалить задачу (DELETE)
 
-bash
 curl -X DELETE http://127.0.0.1:8000/api/tasks/1/
 
-Разработка
-Полезные команды
+## Разработка
+### Полезные команды
 
-    Создать миграции:
+    - [Создать миграции:]
 
-bash
-python manage.py makemigrations
+        python manage.py makemigrations
 
-    Применить миграции:
+    - [Применить миграции:]
 
-bash
-python manage.py migrate
+        python manage.py migrate
 
-    Проверить проект:
+    - [Проверить проект:]
 
-bash
-python manage.py check
+        python manage.py check
 
-Git
+## Git
 
-Коммит только README:
-
-bash
-git add README.md
-git commit -m "Update README"
-git push
-
-Roadmap
+## Roadmap
 
 План (вдохновлён учебным роадмапом):
 
