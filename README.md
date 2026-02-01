@@ -156,13 +156,14 @@ curl -X DELETE http://127.0.0.1:8000/api/tasks/1/
     python manage.py check
 
 ## Git
+1. разобраться с построением README файла для красивой компановки=)
 
 ## Roadmap
 
 План (вдохновлён учебным роадмапом):
 
   - [x] JWT токены (djangorestframework-simplejwt), логин/refresh.
-  - [] Permissions:
+  - [x] Permissions:
     - [] защитить эндпоинты,
     - [] сделать “задачи только свои” (привязка к пользователю).
   - [] PostgreSQL (переезд с SQLite).
