@@ -161,7 +161,7 @@ curl -X DELETE http://127.0.0.1:8000/api/tasks/1/
 
 План (вдохновлён учебным роадмапом):
 
-  - [] JWT токены (djangorestframework-simplejwt), логин/refresh.
+  - [x] JWT токены (djangorestframework-simplejwt), логин/refresh.
 
   - [] Permissions:
         - [] защитить эндпоинты,
