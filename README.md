@@ -41,7 +41,7 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 
 ## Быстрый старт
 ### 1) Клонировать репозиторий
-```bash
+bash
 git clone https://github.com/K1R1UUS/django-todo-backend.git
 cd django-todo-backend
 
