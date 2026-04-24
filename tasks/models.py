@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 class Task(models.Model):
     """Модель для задач"""
@@ -10,6 +11,12 @@ class Task(models.Model):
         ('done', 'Выполнено')
     ]
 
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='tasks',
+        verbose_name='Автор'
+    )
     title = models.CharField(
         max_length= 200,
         verbose_name = 'Название Задачи'

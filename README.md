@@ -19,7 +19,7 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 Простой сервис для управления задачами: создать задачу, менять статус, редактировать описание, удалять, фильтровать и искать.
 
 ## Что уже сделано
-- [x] Модель Task (title, description, status, created_at, updated_at, due_date). 
+- [x] Модель Task (title, description, status, created_at, updated_at, due_date, author).
 - [x] Django Admin Panel для управления задачами.
 - [x] REST API на DRF:
   - [x] CRUD (list/create/retrieve/update/partial_update/destroy).
@@ -27,17 +27,20 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
   - [x] Фильтрация (django-filter).
   - [x] Сортировка (ordering).
   - [x] Поиск (search).
-- [ ] JWT аутентификация (планируется).
-- [ ] Ограничение доступа (permissions) и “задачи только свои” (планируется).
+- [x] JWT аутентификация (djangorestframework-simplejwt).
+- [x] Сессионная авторизация (для Browsable API).
+- [x] Ограничение доступа: только аутентифицированные пользователи.
+- [x] Задачи привязаны к пользователю (author).
 - [ ] PostgreSQL вместо SQLite (планируется).
 - [ ] Документация API (OpenAPI/Swagger) (планируется).
 - [ ] Deployment (планируется).
 
 ## Технологии
 - Python 3.11+
-- Django
+- Django 6.0
 - Django REST Framework
 - django-filter
+- djangorestframework-simplejwt
 
 ## Быстрый старт
 ### 1) Клонировать репозиторий
@@ -81,12 +84,24 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 
     Tasks: http://127.0.0.1:8000/api/tasks/
 
-    Важно: UI на /api/ — это DRF Browsable API (удобный интерфейс для тестирования API), не “пользовательский фронтенд”.
+    Auth: http://127.0.0.1:8000/api/auth/
+
+    Важно: UI на /api/ — это DRF Browsable API (удобный интерфейс для тестирования API), не "пользовательский фронтенд".
 
 ## API эндпоинты
-### Tasks
+### Authentication
 
-    GET /api/tasks/ — список задач (с пагинацией).
+    POST /api/auth/token/ — получить токены (access + refresh).
+    POST /api/auth/token/refresh/ — обновить access токен.
+    GET /api/auth/logout/ — выход из сессии (редирект на /login/).
+
+### Authentication (JWT для API)
+
+    POST /api/auth/token/ — получить токены JWT.
+
+### Tasks (требует аутентификации)
+
+    GET /api/tasks/ — список задач пользователя (с пагинацией).
 
     POST /api/tasks/ — создать задачу.
 
@@ -119,26 +134,35 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
         GET /api/tasks/?search=молоко
 
 ### Примеры запросов
+#### Получить токены (login)
+
+    curl -X POST http://127.0.0.1:8000/api/auth/token/ \
+      -H "Content-Type: application/json" \
+      -d "{\"username\":\"your_username\",\"password\":\"your_password\"}"
+
 #### Создать задачу (POST)
 
-curl -X POST http://127.0.0.1:8000/api/tasks/ \
-  -H "Content-Type: application/json" \
-  -d "{\"title\":\"Купить молоко\",\"description\":\"2 литра\",\"status\":\"todo\"}"
+    curl -X POST http://127.0.0.1:8000/api/tasks/ \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+      -d "{\"title\":\"Купить молоко\",\"description\":\"2 литра\",\"status\":\"todo\"}"
 
 #### Список задач (GET)
 
+    curl http://127.0.0.1:8000/api/tasks/ \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 
-curl http://127.0.0.1:8000/api/tasks/
+#### Обновить токен
 
-#### Обновить статус (PATCH)
+    curl -X POST http://127.0.0.1:8000/api/auth/token/refresh/ \
+      -H "Content-Type: application/json" \
+      -d "{\"refresh\":\"YOUR_REFRESH_TOKEN\"}"
 
-curl -X PATCH http://127.0.0.1:8000/api/tasks/1/ \
-  -H "Content-Type: application/json" \
-  -d "{\"status\":\"done\"}"
+#### Выход (logout)
 
-#### Удалить задачу (DELETE)
-
-curl -X DELETE http://127.0.0.1:8000/api/tasks/1/
+    curl -X POST http://127.0.0.1:8000/api/auth/logout/ \
+      -H "Content-Type: application/json" \
+      -d "{\"refresh\":\"YOUR_REFRESH_TOKEN\"}"
 
 ## Разработка
 ### Полезные команды
@@ -155,27 +179,23 @@ curl -X DELETE http://127.0.0.1:8000/api/tasks/1/
 
     python manage.py check
 
-## Git
-1. разобраться с построением README файла для красивой компановки=)
-
 ## Roadmap
 
 План (вдохновлён учебным роадмапом):
 
-  - [x] JWT токены (djangorestframework-simplejwt), логин/refresh.
-  - [x] Permissions:
-    - [ ] защитить эндпоинты,
-    - [ ] сделать “задачи только свои” (привязка к пользователю).
+  - [x] JWT токены (djangorestframework-simplejwt), логин/refresh/ logout.
+  - [x] Permissions: защита эндпоинтов.
+  - [x] Привязка задач к пользователю (author).
   - [ ] PostgreSQL (переезд с SQLite).
   - [ ] Тесты API (unit/integration).
   - [ ] Документация API (Swagger/OpenAPI).
   - [ ] Deployment (Render/Railway), переменные окружения, HTTPS, CORS.
   - [ ] Отдельный frontend (React/Vue/Next) и интеграция с этим API.
 
-Контакты
+## Контакты
 
     GitHub: @K1R1UUS
 
     Email: kk.pichuginn@gmail.com
 
-Обновлено: 01 февраля 2026
+Обновлено: 24 апреля 2026
