@@ -207,3 +207,68 @@ class JWTAuthFlowTests(APITestCase):
 
         refresh_response = self.client.post("/api/auth/token/refresh/", {"refresh": refresh})
         self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class RegisterAPITests(APITestCase):
+    def setUp(self):
+        self.url = "/api/auth/register/"
+
+    def test_register_creates_user_and_returns_tokens(self):
+        response = self.client.post(
+            self.url,
+            {"username": "newuser", "password": "StrongPass123!", "email": "new@test.com"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+        self.assertTrue(User.objects.filter(username="newuser").exists())
+
+    def test_register_rejects_duplicate_username(self):
+        User.objects.create_user(username="existing", password="pass12345")
+        response = self.client.post(
+            self.url,
+            {"username": "existing", "password": "StrongPass123!"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_register_rejects_weak_password(self):
+        response = self.client.post(
+            self.url,
+            {"username": "someone", "password": "123"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_register_endpoint_accessible_without_auth(self):
+        # AllowAny — доступ должен быть даже без токена
+        response = self.client.post(
+            self.url,
+            {"username": "anon", "password": "StrongPass123!"},
+        )
+        self.assertNotEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class UserListAPITests(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(username="admin", password="pass12345", email="admin@test.com")
+        self.regular = User.objects.create_user(username="alice", password="pass12345")
+        Task.objects.create(title="Задача 1", author=self.regular)
+        Task.objects.create(title="Задача 2", author=self.regular)
+        self.url = "/api/users/"
+
+    def test_regular_user_cannot_access_user_list(self):
+        self.client.force_authenticate(user=self.regular)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_anonymous_cannot_access_user_list(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_admin_can_access_user_list(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_task_count_is_correct(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(self.url)
+        alice_data = next(u for u in response.data["results"] if u["username"] == "alice")
+        self.assertEqual(alice_data["task_count"], 2)

@@ -5,12 +5,12 @@ from django.http import HttpResponseRedirect
 from django.contrib.auth import logout as django_logout
 
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-
+from .serializers import RegisterSerializer
 
 @csrf_protect
 def login_view(request):
@@ -52,3 +52,22 @@ class LogoutAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(status=status.HTTP_205_RESET_CONTENT)
+
+class RegisterAPIView(APIView):
+    """Регистрация нового пользователя — возвращает JWT-токены сразу."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        refresh = RefreshToken.for_user(user)
+        return Response(
+            {
+                "user": {"id": user.id, "username": user.username, "email": user.email},
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+            },
+            status=status.HTTP_201_CREATED,
+        )

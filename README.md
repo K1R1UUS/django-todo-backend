@@ -11,16 +11,17 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 - [Основные URL](#основные-url)
 - [API эндпоинты](#api-эндпоинты)
 - [Примеры запросов](#примеры-запросов)
+- [Тестирование](#тестирование)
 - [Разработка](#разработка)
 - [Roadmap](#roadmap)
 - [Контакты](#контакты)
 
 ## Что это
-Простой сервис для управления задачами: создать задачу, менять статус, редактировать описание, удалять, фильтровать и искать.
+Простой сервис для управления задачами: создать задачу, менять статус, редактировать описание, удалять, фильтровать и искать. Каждый пользователь видит и управляет только своими задачами.
 
 ## Что уже сделано
 - [x] Модель Task (title, description, status, created_at, updated_at, due_date, author).
-- [x] Django Admin Panel для управления задачами.
+- [x] Django Admin Panel для управления задачами и пользователями.
 - [x] REST API на DRF:
   - [x] CRUD (list/create/retrieve/update/partial_update/destroy).
   - [x] Пагинация.
@@ -29,8 +30,13 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
   - [x] Поиск (search).
 - [x] JWT аутентификация (djangorestframework-simplejwt).
 - [x] Сессионная авторизация (для Browsable API).
+- [x] Регистрация новых пользователей (POST /api/auth/register/), сразу с выдачей JWT-токенов.
+- [x] Logout с отзывом refresh-токена (token blacklist).
 - [x] Ограничение доступа: только аутентифицированные пользователи.
-- [x] Задачи привязаны к пользователю (author).
+- [x] Задачи привязаны к пользователю (author), изоляция данных между пользователями.
+- [x] Список пользователей с количеством задач — только для admin/staff (GET /api/users/).
+- [x] SECRET_KEY и DEBUG вынесены в переменные окружения (.env).
+- [x] Тесты API (unit/integration) — модели, permissions, изоляция данных, CRUD, фильтры, JWT-флоу, регистрация, список пользователей.
 - [ ] PostgreSQL вместо SQLite (планируется).
 - [ ] Документация API (OpenAPI/Swagger) (планируется).
 - [ ] Deployment (планируется).
@@ -41,6 +47,7 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 - Django REST Framework
 - django-filter
 - djangorestframework-simplejwt
+- python-dotenv
 
 ## Быстрый старт
 ### 1) Клонировать репозиторий
@@ -64,15 +71,26 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 
     pip install -r requirements.txt
 
-### 4) Применить миграции
+### 4) Настроить переменные окружения
+
+Создать файл `.env` в корне проекта (рядом с `manage.py`):
+
+    SECRET_KEY=твой-секретный-ключ
+    DEBUG=True
+
+Сгенерировать ключ можно командой:
+
+    python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+
+### 5) Применить миграции
 
     python manage.py migrate
 
-### 5) Создать суперпользователя
+### 6) Создать суперпользователя
 
     python manage.py createsuperuser
 
-### 6) Запустить сервер
+### 7) Запустить сервер
 
     python manage.py runserver
 
@@ -84,20 +102,21 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 
     Tasks: http://127.0.0.1:8000/api/tasks/
 
+    Users (только admin/staff): http://127.0.0.1:8000/api/users/
+
     Auth: http://127.0.0.1:8000/api/auth/
 
     Важно: UI на /api/ — это DRF Browsable API (удобный интерфейс для тестирования API), не "пользовательский фронтенд".
 
 ## API эндпоинты
+
 ### Authentication
 
+    POST /api/auth/register/ — регистрация нового пользователя (возвращает JWT-токены сразу).
     POST /api/auth/token/ — получить токены (access + refresh).
     POST /api/auth/token/refresh/ — обновить access токен.
-    GET /api/auth/logout/ — выход из сессии (редирект на /login/).
-
-### Authentication (JWT для API)
-
-    POST /api/auth/token/ — получить токены JWT.
+    POST /api/auth/logout/token/ — отозвать (blacklist) refresh-токен, для JWT-клиентов.
+    GET /api/auth/logout/ — выход из сессии (редирект на /login/), для Browsable API.
 
 ### Tasks (требует аутентификации)
 
@@ -113,7 +132,13 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 
     DELETE /api/tasks/{id}/ — удалить задачу.
 
-### Query-параметры
+### Users (требует прав admin/staff)
+
+    GET /api/users/ — список пользователей с количеством задач (task_count).
+
+    GET /api/users/{id}/ — детали конкретного пользователя.
+
+### Query-параметры (Tasks)
 
     Пагинация:
 
@@ -133,7 +158,14 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 
         GET /api/tasks/?search=молоко
 
-### Примеры запросов
+## Примеры запросов
+
+#### Регистрация
+
+    curl -X POST http://127.0.0.1:8000/api/auth/register/ \
+      -H "Content-Type: application/json" \
+      -d "{\"username\":\"newbie\",\"password\":\"StrongPass123!\",\"email\":\"newbie@test.com\"}"
+
 #### Получить токены (login)
 
     curl -X POST http://127.0.0.1:8000/api/auth/token/ \
@@ -158,38 +190,69 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
       -H "Content-Type: application/json" \
       -d "{\"refresh\":\"YOUR_REFRESH_TOKEN\"}"
 
-#### Выход (logout)
+#### Выход (JWT — отзыв refresh-токена)
 
-    curl -X POST http://127.0.0.1:8000/api/auth/logout/ \
+    curl -X POST http://127.0.0.1:8000/api/auth/logout/token/ \
       -H "Content-Type: application/json" \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
       -d "{\"refresh\":\"YOUR_REFRESH_TOKEN\"}"
+
+#### Список пользователей (только admin/staff)
+
+    curl http://127.0.0.1:8000/api/users/ \
+      -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
+
+## Тестирование
+
+Проект покрыт unit/integration тестами (`tasks/tests.py`):
+
+- Модель Task (`__str__`, дефолтные значения, ordering).
+- Permissions — анонимный пользователь не имеет доступа.
+- Изоляция данных — пользователи не видят чужие задачи.
+- CRUD операции над задачами.
+- Фильтрация, поиск, сортировка.
+- JWT-флоу: получение токена, доступ по токену, refresh, logout с blacklist.
+- Регистрация: успешная, дубль username, слабый пароль, доступ без авторизации.
+- Список пользователей: доступ только для admin/staff, корректный подсчёт task_count.
+
+Запуск тестов:
+
+    python manage.py test tasks
 
 ## Разработка
 ### Полезные команды
 
-- [Создать миграции:]
+- Создать миграции:
 
-    python manage.py makemigrations
+      python manage.py makemigrations
 
-- [Применить миграции:]
+- Применить миграции:
 
-    python manage.py migrate
+      python manage.py migrate
 
-- [Проверить проект:]
+- Проверить проект:
 
-    python manage.py check
+      python manage.py check
+
+- Запустить тесты:
+
+      python manage.py test tasks
 
 ## Roadmap
 
 План (вдохновлён учебным роадмапом):
 
-  - [x] JWT токены (djangorestframework-simplejwt), логин/refresh/ logout.
+  - [x] JWT токены (djangorestframework-simplejwt), логин/refresh/logout с blacklist.
   - [x] Permissions: защита эндпоинтов.
-  - [x] Привязка задач к пользователю (author).
+  - [x] Привязка задач к пользователю (author), изоляция данных.
+  - [x] Регистрация пользователей.
+  - [x] Список пользователей для admin/staff.
+  - [x] SECRET_KEY и DEBUG через переменные окружения.
+  - [x] Тесты API (unit/integration).
   - [ ] PostgreSQL (переезд с SQLite).
-  - [ ] Тесты API (unit/integration).
   - [ ] Документация API (Swagger/OpenAPI).
-  - [ ] Deployment (Render/Railway), переменные окружения, HTTPS, CORS.
+  - [ ] Deployment (Render/Railway), CORS.
+  - [ ] Смена пароля / профиль пользователя (GET /api/auth/me/).
   - [ ] Отдельный frontend (React/Vue/Next) и интеграция с этим API.
 
 ## Контакты
@@ -198,4 +261,4 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 
     Email: kk.pichuginn@gmail.com
 
-Обновлено: 24 апреля 2026
+Обновлено: 29 июля 2026
