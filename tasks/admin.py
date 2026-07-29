@@ -10,7 +10,7 @@ class TaskAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Основная информация', {
-            'fields': ('title', 'description')
+            'fields': ('title', 'description', 'author')
         }),
         ('Статус и сроки', {
             'fields':('status', 'due_date')
