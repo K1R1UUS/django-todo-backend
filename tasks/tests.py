@@ -272,3 +272,62 @@ class UserListAPITests(APITestCase):
         response = self.client.get(self.url)
         alice_data = next(u for u in response.data["results"] if u["username"] == "alice")
         self.assertEqual(alice_data["task_count"], 2)
+
+class ProfileAPITests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="alice", password="OldPass123!", email="alice@test.com")
+        self.client.force_authenticate(user=self.user)
+        self.url = "/api/auth/me/"
+
+    def test_get_own_profile(self):
+        Task.objects.create(title="Задача", author=self.user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["username"], "alice")
+        self.assertEqual(response.data["task_count"], 1)
+
+    def test_anonymous_cannot_access_profile(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_update_own_email(self):
+        response = self.client.patch(self.url, {"email": "newemail@test.com"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "newemail@test.com")
+
+    def test_cannot_update_username_via_profile(self):
+        response = self.client.patch(self.url, {"username": "hacked"})
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "alice")  # username защищён read_only_fields
+
+
+class ChangePasswordAPITests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="alice", password="OldPass123!")
+        self.client.force_authenticate(user=self.user)
+        self.url = "/api/auth/change-password/"
+
+    def test_change_password_success(self):
+        response = self.client.post(
+            self.url,
+            {"old_password": "OldPass123!", "new_password": "NewStrongPass456!"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("NewStrongPass456!"))
+
+    def test_change_password_wrong_old_password(self):
+        response = self.client.post(
+            self.url,
+            {"old_password": "WrongPass!", "new_password": "NewStrongPass456!"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_change_password_weak_new_password(self):
+        response = self.client.post(
+            self.url,
+            {"old_password": "OldPass123!", "new_password": "123"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
