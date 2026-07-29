@@ -11,6 +11,8 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from .serializers import RegisterSerializer
+from rest_framework.generics import RetrieveUpdateAPIView
+from .serializers import ProfileSerializer, ChangePasswordSerializer
 
 @csrf_protect
 def login_view(request):
@@ -71,3 +73,27 @@ class RegisterAPIView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+class ProfileAPIView(RetrieveUpdateAPIView):
+    """Просмотр и частичное обновление своего профиля (email)."""
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "patch"]
+
+    def get_object(self):
+        return self.request.user
+
+
+class ChangePasswordAPIView(APIView):
+    """Смена пароля текущего пользователя."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        user.set_password(serializer.validated_data["new_password"])
+        user.save()
+
+        return Response({"detail": "Пароль успешно изменён."}, status=status.HTTP_200_OK)
