@@ -4,6 +4,13 @@ from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect
 from django.contrib.auth import logout as django_logout
 
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
+
 
 @csrf_protect
 def login_view(request):
@@ -20,5 +27,28 @@ def login_view(request):
 
 
 def logout_view(request):
+    """Сессионный logout — для Browsable API (GET)."""
     django_logout(request)
     return HttpResponseRedirect("/api/auth/login/")
+
+
+class LogoutAPIView(APIView):
+    """JWT-logout — блэклистит refresh-токен (POST, для API-клиентов)."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.data.get("refresh")
+        if not refresh_token:
+            return Response(
+                {"detail": "Поле 'refresh' обязательно."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError:
+            return Response(
+                {"detail": "Невалидный или уже отозванный токен."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(status=status.HTTP_205_RESET_CONTENT)
