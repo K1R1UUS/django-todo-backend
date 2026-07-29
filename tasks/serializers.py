@@ -36,3 +36,25 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "email", "date_joined", "task_count"]
+
+class ProfileSerializer(serializers.ModelSerializer):
+    task_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "date_joined", "task_count"]
+        read_only_fields = ["id", "username", "date_joined"]
+
+    def get_task_count(self, obj):
+        return obj.tasks.count()
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True, validators=[validate_password])
+
+    def validate_old_password(self, value):
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Неверный текущий пароль.")
+        return value
