@@ -117,6 +117,9 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
     POST /api/auth/token/refresh/ — обновить access токен.
     POST /api/auth/logout/token/ — отозвать (blacklist) refresh-токен, для JWT-клиентов.
     GET /api/auth/logout/ — выход из сессии (редирект на /login/), для Browsable API.
+    GET /api/auth/me/ — посмотреть свой профиль (username, email, date_joined, task_count).
+    PATCH /api/auth/me/ — обновить email в своём профиле.
+    POST /api/auth/change-password/ — сменить пароль (требует старый пароль).
 
 ### Tasks (требует аутентификации)
 
@@ -202,6 +205,25 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
     curl http://127.0.0.1:8000/api/users/ \
       -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
 
+#### Посмотреть свой профиль
+
+    curl http://127.0.0.1:8000/api/auth/me/ \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+
+#### Обновить email в профиле
+
+    curl -X PATCH http://127.0.0.1:8000/api/auth/me/ \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+      -d "{\"email\":\"newemail@test.com\"}"
+
+#### Сменить пароль
+
+    curl -X POST http://127.0.0.1:8000/api/auth/change-password/ \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+      -d "{\"old_password\":\"OldPass123!\",\"new_password\":\"NewStrongPass456!\"}"
+
 ## Тестирование
 
 Проект покрыт unit/integration тестами (`tasks/tests.py`):
@@ -252,7 +274,7 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
   - [ ] PostgreSQL (переезд с SQLite).
   - [ ] Документация API (Swagger/OpenAPI).
   - [ ] Deployment (Render/Railway), CORS.
-  - [ ] Смена пароля / профиль пользователя (GET /api/auth/me/).
+  - [x] Смена пароля / профиль пользователя (GET /api/auth/me/).
   - [ ] Отдельный frontend (React/Vue/Next) и интеграция с этим API.
 
 ## Контакты
