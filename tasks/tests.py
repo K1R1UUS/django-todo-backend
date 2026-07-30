@@ -2,6 +2,9 @@ from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.test import APITestCase
 from .models import Task
+from django.urls import reverse
+from django.test import TestCase
+
 
 
 class TaskModelTests(APITestCase):
@@ -331,3 +334,81 @@ class ChangePasswordAPITests(APITestCase):
             {"old_password": "OldPass123!", "new_password": "123"},
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+class TaskAdminAccessTests(TestCase):
+    def setUp(self):
+        self.superuser = User.objects.create_superuser(
+            username="admin", password="AdminPass123!", email="admin@test.com"
+        )
+        self.regular_user = User.objects.create_user(
+            username="alice", password="pass12345"
+        )
+        self.changelist_url = reverse("admin:tasks_task_changelist")
+        self.add_url = reverse("admin:tasks_task_add")
+
+    def test_superuser_can_access_admin(self):
+        self.client.login(username="admin", password="AdminPass123!")
+        response = self.client.get(self.changelist_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_regular_user_redirected_from_admin(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(self.changelist_url)
+        # Django admin редиректит не-staff на страницу логина (302)
+        self.assertEqual(response.status_code, 302)
+
+    def test_anonymous_redirected_from_admin(self):
+        response = self.client.get(self.changelist_url)
+        self.assertEqual(response.status_code, 302)
+
+
+class TaskAdminFormTests(TestCase):
+    def setUp(self):
+        self.superuser = User.objects.create_superuser(
+            username="admin", password="AdminPass123!", email="admin@test.com"
+        )
+        self.client.login(username="admin", password="AdminPass123!")
+        self.add_url = reverse("admin:tasks_task_add")
+
+    def test_author_field_present_in_add_form(self):
+        """Регрессионный тест: author должен быть в форме (баг из fieldsets)."""
+        response = self.client.get(self.add_url)
+        self.assertContains(response, 'name="author"')
+
+    def test_can_create_task_via_admin(self):
+        response = self.client.post(self.add_url, {
+            "title": "Задача из админки",
+            "description": "Тест",
+            "status": "todo",
+            "author": self.superuser.id,
+        })
+        # 302 = успешный редирект после сохранения
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Task.objects.filter(title="Задача из админки").exists())
+
+
+class TaskAdminListViewTests(TestCase):
+    def setUp(self):
+        self.superuser = User.objects.create_superuser(
+            username="admin", password="AdminPass123!", email="admin@test.com"
+        )
+        self.client.login(username="admin", password="AdminPass123!")
+        self.changelist_url = reverse("admin:tasks_task_changelist")
+
+        Task.objects.create(title="Купить молоко", status="todo", author=self.superuser)
+        Task.objects.create(title="Сделать отчёт", status="done", author=self.superuser)
+
+    def test_changelist_shows_tasks(self):
+        response = self.client.get(self.changelist_url)
+        self.assertContains(response, "Купить молоко")
+        self.assertContains(response, "Сделать отчёт")
+
+    def test_search_by_title(self):
+        response = self.client.get(self.changelist_url, {"q": "молоко"})
+        self.assertContains(response, "Купить молоко")
+        self.assertNotContains(response, "Сделать отчёт")
+
+    def test_filter_by_status(self):
+        response = self.client.get(self.changelist_url, {"status__exact": "done"})
+        self.assertContains(response, "Сделать отчёт")
+        self.assertNotContains(response, "Купить молоко")
