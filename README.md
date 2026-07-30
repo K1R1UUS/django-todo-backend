@@ -38,7 +38,7 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 - [x] SECRET_KEY и DEBUG вынесены в переменные окружения (.env).
 - [x] Тесты API (unit/integration) — модели, permissions, изоляция данных, CRUD, фильтры, JWT-флоу, регистрация, список пользователей.
 - [ ] PostgreSQL вместо SQLite (планируется).
-- [ ] Документация API (OpenAPI/Swagger) (планируется).
+- [x] Документация API (OpenAPI/Swagger) (планируется).
 - [ ] Deployment (планируется).
 
 ## Технологии
