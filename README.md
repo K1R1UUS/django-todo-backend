@@ -241,6 +241,13 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
 
     python manage.py test tasks
 
+## Документация API (Swagger/OpenAPI)
+
+    Swagger UI: http://127.0.0.1:8000/api/docs/
+    ReDoc: http://127.0.0.1:8000/api/redoc/
+    OpenAPI схема (JSON): http://127.0.0.1:8000/api/schema/
+
+
 ## Разработка
 ### Полезные команды
 
@@ -272,7 +279,7 @@ Backend для Todo-листа на Django + Django REST Framework (DRF).
   - [x] SECRET_KEY и DEBUG через переменные окружения.
   - [x] Тесты API (unit/integration).
   - [ ] PostgreSQL (переезд с SQLite).
-  - [ ] Документация API (Swagger/OpenAPI).
+  - [x] Документация API (Swagger/OpenAPI).
   - [ ] Deployment (Render/Railway), CORS.
   - [x] Смена пароля / профиль пользователя (GET /api/auth/me/).
   - [ ] Отдельный frontend (React/Vue/Next) и интеграция с этим API.
