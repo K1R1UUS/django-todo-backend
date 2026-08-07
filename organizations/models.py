@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 class Branch(models.Model):
     """Филиал компании."""
     name = models.CharField(max_length=200, verbose_name="Название филиала")
-    address = models.CharField(max_length=300, blank=True, verbose_name="Адрес")
     head = models.OneToOneField(
         User,
         on_delete=models.SET_NULL,
@@ -73,10 +72,17 @@ class Profile(models.Model):
         related_name="employees",
         verbose_name="Отдел",
     )
+    position = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name="Должность",
+    )
 
     class Meta:
         verbose_name = "Профиль сотрудника"
         verbose_name_plural = "Профили сотрудников"
 
     def __str__(self):
+        if self.position:
+            return f"{self.user.username} — {self.position}"
         return self.user.username

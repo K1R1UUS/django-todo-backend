@@ -44,8 +44,8 @@ class ProfileInlineForUser(admin.StackedInline):
 
 @admin.register(Branch)
 class BranchAdmin(admin.ModelAdmin):
-    list_display = ("name", "head", "address", "created_at")
-    search_fields = ("name", "address")
+    list_display = ("name", "head", "created_at")
+    search_fields = ("name",)
     inlines = [DepartmentInline]
 
 

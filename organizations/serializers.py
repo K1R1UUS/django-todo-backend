@@ -10,7 +10,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ["username", "email"]
+        fields = ["username", "email", "position"]
 
 
 class DepartmentStructureSerializer(serializers.ModelSerializer):
