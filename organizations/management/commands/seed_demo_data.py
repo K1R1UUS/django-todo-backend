@@ -74,12 +74,10 @@ class Command(BaseCommand):
     def _create_branches_and_departments(self, users):
         branch_moscow = Branch.objects.create(
             name="Москва",
-            address="ул. Тверская, 1",
             head=users[0],  # ivanov — начальник филиала
         )
         branch_kazan = Branch.objects.create(
             name="Казань",
-            address="ул. Баумана, 10",
             head=users[1],  # petrov — начальник филиала
         )
 
