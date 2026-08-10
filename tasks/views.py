@@ -1,18 +1,20 @@
+from django.db.models import Q
+from django.contrib.auth.models import User
+from django_filters.rest_framework import DjangoFilterBackend
+
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from django_filters.rest_framework import DjangoFilterBackend
-from django.contrib.auth.models import User
-from django.db.models import Count
 
 from .models import Task
 from .serializers import TaskSerializer, UserListSerializer
+from .permissions import CanAssignTaskTarget
 
 
 class TaskViewSet(ModelViewSet):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanAssignTaskTarget]
 
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
 
@@ -22,9 +24,29 @@ class TaskViewSet(ModelViewSet):
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        if self.request.user and self.request.user.is_authenticated:
-            return self.queryset.filter(author=self.request.user)
-        return Task.objects.none()
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return Task.objects.none()
+
+        if user.is_staff or user.is_superuser:
+            return self.queryset
+
+        visibility = (
+            Q(author=user)
+            | Q(assignee=user)
+            | Q(department__head=user)
+            | Q(branch__head=user)
+        )
+
+        user_department = getattr(getattr(user, "profile", None), "department", None)
+        if user_department:
+            visibility |= Q(department=user_department, assignee__isnull=True)
+
+        if hasattr(user, "headed_department"):
+            own_branch = user.headed_department.branch
+            visibility |= Q(branch=own_branch, department__isnull=True)
+
+        return self.queryset.filter(visibility).distinct()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -32,6 +54,7 @@ class TaskViewSet(ModelViewSet):
 
 class UserListViewSet(ReadOnlyModelViewSet):
     """Список пользователей — только для staff/admin."""
+    from django.db.models import Count
     queryset = User.objects.annotate(task_count=Count("tasks")).order_by("-date_joined")
     serializer_class = UserListSerializer
     permission_classes = [IsAdminUser]

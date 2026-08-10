@@ -4,7 +4,7 @@ from rest_framework.test import APITestCase
 from .models import Task
 from django.urls import reverse
 from django.test import TestCase
-
+from organizations.models import Branch, Department, Profile
 
 
 class TaskModelTests(APITestCase):
@@ -412,3 +412,178 @@ class TaskAdminListViewTests(TestCase):
         response = self.client.get(self.changelist_url, {"status__exact": "done"})
         self.assertContains(response, "Сделать отчёт")
         self.assertNotContains(response, "Купить молоко")
+
+class TaskAssignmentPermissionTests(APITestCase):
+    def setUp(self):
+        self.branch_head = User.objects.create_user(username="branch_head", password="pass12345")
+        self.dept_head_a = User.objects.create_user(username="dept_head_a", password="pass12345")
+        self.dept_head_b = User.objects.create_user(username="dept_head_b", password="pass12345")
+        self.employee = User.objects.create_user(username="employee", password="pass12345")
+        self.other_branch_head = User.objects.create_user(username="other_branch_head", password="pass12345")
+
+        self.branch = Branch.objects.create(name="Москва", head=self.branch_head)
+        self.other_branch = Branch.objects.create(name="Казань", head=self.other_branch_head)
+
+        self.dept_a = Department.objects.create(name="Продажи", branch=self.branch, head=self.dept_head_a)
+        self.dept_b = Department.objects.create(name="Поддержка", branch=self.branch, head=self.dept_head_b)
+        self.other_dept = Department.objects.create(name="Логистика", branch=self.other_branch)
+
+        Profile.objects.create(user=self.dept_head_a, department=self.dept_a)
+        Profile.objects.create(user=self.employee, department=self.dept_a)
+
+        self.url = "/api/tasks/"
+
+    def test_employee_can_create_personal_task(self):
+        self.client.force_authenticate(user=self.employee)
+        response = self.client.post(self.url, {"title": "Личная задача"})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_employee_cannot_assign_task_to_department(self):
+        self.client.force_authenticate(user=self.employee)
+        response = self.client.post(self.url, {"title": "Задача", "department": self.dept_a.id})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_employee_cannot_assign_task_to_branch(self):
+        self.client.force_authenticate(user=self.employee)
+        response = self.client.post(self.url, {"title": "Задача", "branch": self.branch.id})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_department_head_can_assign_to_own_department(self):
+        self.client.force_authenticate(user=self.dept_head_a)
+        response = self.client.post(self.url, {"title": "Задача отделу", "department": self.dept_a.id})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_department_head_cannot_assign_to_foreign_department(self):
+        self.client.force_authenticate(user=self.dept_head_a)
+        response = self.client.post(self.url, {"title": "Задача", "department": self.dept_b.id})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_department_head_cannot_assign_to_branch(self):
+        self.client.force_authenticate(user=self.dept_head_a)
+        response = self.client.post(self.url, {"title": "Задача", "branch": self.branch.id})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_department_head_can_assign_to_own_employee(self):
+        self.client.force_authenticate(user=self.dept_head_a)
+        response = self.client.post(
+            self.url, {"title": "Задача сотруднику", "assignee": self.employee.id}
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_branch_head_can_assign_to_own_branch(self):
+        self.client.force_authenticate(user=self.branch_head)
+        response = self.client.post(self.url, {"title": "Задача филиалу", "branch": self.branch.id})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_branch_head_can_assign_to_department_in_own_branch(self):
+        self.client.force_authenticate(user=self.branch_head)
+        response = self.client.post(self.url, {"title": "Задача отделу", "department": self.dept_a.id})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_branch_head_cannot_assign_to_foreign_branch(self):
+        self.client.force_authenticate(user=self.branch_head)
+        response = self.client.post(self.url, {"title": "Задача", "branch": self.other_branch.id})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_branch_head_cannot_assign_to_department_in_foreign_branch(self):
+        self.client.force_authenticate(user=self.branch_head)
+        response = self.client.post(self.url, {"title": "Задача", "department": self.other_dept.id})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_branch_head_can_assign_to_department_head_personally(self):
+        self.client.force_authenticate(user=self.branch_head)
+        response = self.client.post(
+            self.url, {"title": "Задача лично начальнику отдела", "assignee": self.dept_head_a.id}
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
+class TaskVisibilityTests(APITestCase):
+    def setUp(self):
+        self.branch_head = User.objects.create_user(username="branch_head", password="pass12345")
+        self.dept_head = User.objects.create_user(username="dept_head", password="pass12345")
+        self.other_dept_head = User.objects.create_user(username="other_dept_head", password="pass12345")
+        self.employee_a = User.objects.create_user(username="employee_a", password="pass12345")
+        self.employee_b = User.objects.create_user(username="employee_b", password="pass12345")
+
+        self.branch = Branch.objects.create(name="Москва", head=self.branch_head)
+        self.dept = Department.objects.create(name="Продажи", branch=self.branch, head=self.dept_head)
+        self.other_dept = Department.objects.create(name="Поддержка", branch=self.branch, head=self.other_dept_head)
+
+        Profile.objects.create(user=self.dept_head, department=self.dept)
+        Profile.objects.create(user=self.employee_a, department=self.dept)
+        Profile.objects.create(user=self.employee_b, department=self.other_dept)
+
+        self.url = "/api/tasks/"
+
+    def test_department_wide_task_visible_to_all_department_employees(self):
+        Task.objects.create(title="Задача отделу", author=self.dept_head, department=self.dept)
+
+        self.client.force_authenticate(user=self.employee_a)
+        response = self.client.get(self.url)
+        titles = [t["title"] for t in response.data["results"]]
+        self.assertIn("Задача отделу", titles)
+
+    def test_department_wide_task_not_visible_to_other_department(self):
+        Task.objects.create(title="Задача отделу", author=self.dept_head, department=self.dept)
+
+        self.client.force_authenticate(user=self.employee_b)
+        response = self.client.get(self.url)
+        titles = [t["title"] for t in response.data["results"]]
+        self.assertNotIn("Задача отделу", titles)
+
+    def test_branch_wide_task_visible_to_all_department_heads(self):
+        Task.objects.create(title="Задача филиалу", author=self.branch_head, branch=self.branch)
+
+        self.client.force_authenticate(user=self.dept_head)
+        response = self.client.get(self.url)
+        titles = [t["title"] for t in response.data["results"]]
+        self.assertIn("Задача филиалу", titles)
+
+        self.client.force_authenticate(user=self.other_dept_head)
+        response = self.client.get(self.url)
+        titles = [t["title"] for t in response.data["results"]]
+        self.assertIn("Задача филиалу", titles)
+
+    def test_branch_wide_task_not_visible_to_regular_employee(self):
+        Task.objects.create(title="Задача филиалу", author=self.branch_head, branch=self.branch)
+
+        self.client.force_authenticate(user=self.employee_a)
+        response = self.client.get(self.url)
+        titles = [t["title"] for t in response.data["results"]]
+        self.assertNotIn("Задача филиалу", titles)
+
+    def test_task_assigned_to_specific_person_visible_only_to_them(self):
+        Task.objects.create(
+            title="Личная задача от начальника",
+            author=self.dept_head,
+            department=self.dept,
+            assignee=self.employee_a,
+        )
+
+        self.client.force_authenticate(user=self.employee_a)
+        response = self.client.get(self.url)
+        titles = [t["title"] for t in response.data["results"]]
+        self.assertIn("Личная задача от начальника", titles)
+
+    def test_department_head_still_sees_task_after_assignment(self):
+        """Начальник отдела сохраняет видимость задачи даже после назначения конкретному сотруднику."""
+        Task.objects.create(
+            title="Делегированная задача",
+            author=self.dept_head,
+            department=self.dept,
+            assignee=self.employee_a,
+        )
+
+        self.client.force_authenticate(user=self.dept_head)
+        response = self.client.get(self.url)
+        titles = [t["title"] for t in response.data["results"]]
+        self.assertIn("Делегированная задача", titles)
+
+    def test_regular_employee_does_not_see_personal_task_of_colleague(self):
+        Task.objects.create(title="Личная задача коллеги", author=self.employee_a)
+
+        self.client.force_authenticate(user=self.employee_b)
+        response = self.client.get(self.url)
+        titles = [t["title"] for t in response.data["results"]]
+        self.assertNotIn("Личная задача коллеги", titles)

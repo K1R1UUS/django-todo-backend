@@ -17,6 +17,30 @@ class Task(models.Model):
         related_name='tasks',
         verbose_name='Автор'
     )
+    assignee = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_tasks',
+        verbose_name='Исполнитель'
+    )
+    branch = models.ForeignKey(
+        'organizations.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='branch_tasks',
+        verbose_name='Филиал (адресат)'
+    )
+    department = models.ForeignKey(
+        'organizations.Department',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='department_tasks',
+        verbose_name='Отдел (адресат)'
+    )
     title = models.CharField(
         max_length= 200,
         verbose_name = 'Название Задачи'
