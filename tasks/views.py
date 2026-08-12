@@ -8,8 +8,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 from .models import Task
 from .serializers import TaskSerializer, UserListSerializer
-from .permissions import CanAssignTaskTarget
-
+from .permissions import CanAssignTaskTarget, get_visible_tasks
 
 class TaskViewSet(ModelViewSet):
     queryset = Task.objects.all()
@@ -24,19 +23,7 @@ class TaskViewSet(ModelViewSet):
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        user = self.request.user
-        if not user or not user.is_authenticated:
-            return Task.objects.none()
-
-        if user.is_staff or user.is_superuser:
-            return self.queryset
-
-        visibility = (
-            Q(author=user)
-            | Q(assignee=user)
-            | Q(department__head=user)
-            | Q(branch__head=user)
-        )
+        return get_visible_tasks(self.request.user)
 
         user_department = getattr(getattr(user, "profile", None), "department", None)
         if user_department:

@@ -22,7 +22,7 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return HttpResponseRedirect("/api/tasks/")
+            return HttpResponseRedirect("/app/tasks/")
         else:
             return render(request, "login.html", {"error": "Неверный логин или пароль"})
     return render(request, "login.html")

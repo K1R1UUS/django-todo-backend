@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Мои задачи — Таск-трекер{% endblock %}
+{% block nav_tasks %}active{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <div>
+        <h1>Мои задачи</h1>
+        <p class="mono">{{ tasks|length }} задач в списке</p>
+    </div>
+    <a href="{% url 'web-task-create' %}" class="btn">+ Новая задача</a>
+</div>
+
+<div class="filters">
+    <a href="{% url 'web-task-list' %}" class="{% if not status_filter %}active{% endif %}">Все</a>
+    <a href="?status=todo" class="{% if status_filter == 'todo' %}active{% endif %}">К выполнению</a>
+    <a href="?status=in_progress" class="{% if status_filter == 'in_progress' %}active{% endif %}">В процессе</a>
+    <a href="?status=done" class="{% if status_filter == 'done' %}active{% endif %}">Выполнено</a>
+</div>
+
+{% if tasks %}
+<div class="task-list">
+    {% for task in tasks %}
+    <div class="task-card
+        {% if task.assignee_id == request.user.id %}scope-mine
+        {% elif task.branch_id %}scope-branch
+        {% elif task.department_id %}scope-department
+        {% endif %}">
+        <div>
+            <h3>{{ task.title }}</h3>
+            {% if task.description %}<p>{{ task.description|truncatewords:20 }}</p>{% endif %}
+            <div class="task-meta">
+                <span><span class="status-dot {{ task.status }}"></span>{{ task.get_status_display }}</span>
+                {% if task.due_date %}<span class="mono">до {{ task.due_date|date:"d.m.Y" }}</span>{% endif %}
+                {% if task.branch and not task.department %}<span class="tag branch">Филиал: {{ task.branch.name }}</span>{% endif %}
+                {% if task.department %}<span class="tag department">Отдел: {{ task.department.name }}</span>{% endif %}
+                {% if task.assignee %}<span class="tag mine">→ {{ task.assignee.username }}</span>{% endif %}
+                {% if not task.branch and not task.department and not task.assignee %}<span class="tag personal">Личная</span>{% endif %}
+            </div>
+        </div>
+        <div class="task-actions">
+            <a href="{% url 'web-task-edit' task.id %}">Изменить</a>
+            {% if task.author_id == request.user.id or request.user.is_staff or request.user.is_superuser %}
+            <form method="post" action="{% url 'web-task-delete' task.id %}" onsubmit="return confirm('Удалить задачу?');" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">Удалить</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>Пока нет задач</h3>
+    <p>Создайте первую задачу — она появится здесь.</p>
+</div>
+{% endif %}
+{% endblock %}

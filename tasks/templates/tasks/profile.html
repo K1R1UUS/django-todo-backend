@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Профиль{% endblock %}
+{% block nav_profile %}active{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Профиль</h1>
+</div>
+
+<div class="card" style="margin-bottom: 20px;">
+    <h3>{{ request.user.username }}</h3>
+    <p class="mono">Создано вами задач: {{ task_count }}</p>
+</div>
+
+<div class="card" style="margin-bottom: 20px;">
+    <h3 style="margin-bottom: 16px;">Email</h3>
+    <form method="post">
+        {% csrf_token %}
+        <div class="field">
+            <label>Email</label>
+            <input type="email" name="email" value="{{ request.user.email }}">
+        </div>
+        <button type="submit" name="update_email" class="btn">Сохранить</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom: 16px;">Смена пароля</h3>
+    <form method="post">
+        {% csrf_token %}
+        <div class="field">
+            <label>Текущий пароль</label>
+            <input type="password" name="old_password" required>
+        </div>
+        <div class="field">
+            <label>Новый пароль</label>
+            <input type="password" name="new_password" required>
+        </div>
+        <button type="submit" name="change_password" class="btn">Изменить пароль</button>
+    </form>
+</div>
+{% endblock %}

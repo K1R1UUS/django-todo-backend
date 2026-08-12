@@ -1,4 +1,6 @@
 from rest_framework.permissions import BasePermission
+from django.db.models import Q
+from .models import Task
 
 
 def get_user_department(user):
@@ -16,6 +18,30 @@ def is_branch_head(user, branch):
     """Является ли user начальником именно этого филиала."""
     return branch is not None and branch.head_id == user.id
 
+def get_visible_tasks(user):
+    """Задачи, видимые пользователю — общая логика для API и веб-страниц."""
+    if not user or not user.is_authenticated:
+        return Task.objects.none()
+
+    if user.is_staff or user.is_superuser:
+        return Task.objects.all()
+
+    visibility = (
+        Q(author=user)
+        | Q(assignee=user)
+        | Q(department__head=user)
+        | Q(branch__head=user)
+    )
+
+    user_department = get_user_department(user)
+    if user_department:
+        visibility |= Q(department=user_department, assignee__isnull=True)
+
+    if hasattr(user, "headed_department"):
+        own_branch = user.headed_department.branch
+        visibility |= Q(branch=own_branch, department__isnull=True)
+
+    return Task.objects.filter(visibility).distinct()
 
 class CanAssignTaskTarget(BasePermission):
     """

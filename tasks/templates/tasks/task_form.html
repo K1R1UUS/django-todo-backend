@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Редактировать задачу{% else %}Новая задача{% endif %}{% endblock %}
+{% block nav_tasks %}active{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>{% if is_edit %}Редактировать задачу{% else %}Новая задача{% endif %}</h1>
+</div>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="field">
+            <label for="{{ form.title.id_for_label }}">Название</label>
+            {{ form.title }}
+            {{ form.title.errors }}
+        </div>
+
+        <div class="field">
+            <label for="{{ form.description.id_for_label }}">Описание</label>
+            {{ form.description }}
+        </div>
+
+        <div class="field">
+            <label for="{{ form.status.id_for_label }}">Статус</label>
+            {{ form.status }}
+        </div>
+
+        <div class="field">
+            <label for="{{ form.due_date.id_for_label }}">Срок выполнения</label>
+            {{ form.due_date }}
+        </div>
+
+        {% if show_branch or show_department or cascade_assignee or form.assignee.field.widget.input_type != 'hidden' %}
+        <hr class="section-divider">
+        <p class="hint" style="margin-bottom: 16px;">Оставьте пустым для личной задачи, либо выберите, кому она адресована.</p>
+        {% endif %}
+
+        {% if show_branch %}
+        <div class="field">
+            <label for="{{ form.branch.id_for_label }}">{{ form.branch.label }}</label>
+            {{ form.branch }}
+        </div>
+        {% else %}
+        {{ form.branch }}
+        {% endif %}
+
+        {% if show_department %}
+        <div class="field" id="field-department">
+            <label for="{{ form.department.id_for_label }}">{{ form.department.label }}</label>
+            {{ form.department }}
+        </div>
+        {% else %}
+        {{ form.department }}
+        {% endif %}
+
+        {% if form.assignee.field.widget.input_type != 'hidden' %}
+        <div class="field" id="field-assignee">
+            <label for="{{ form.assignee.id_for_label }}">{{ form.assignee.label }}</label>
+            {{ form.assignee }}
+        </div>
+        {% else %}
+        {{ form.assignee }}
+        {% endif %}
+
+        <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <button type="submit" class="btn">{% if is_edit %}Сохранить{% else %}Создать{% endif %}</button>
+            <a href="{% url 'web-task-list' %}" class="btn secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+{{ department_branch_map|json_script:"dept-branch-map" }}
+{{ assignee_department_map|json_script:"assignee-dept-map" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var deptBranchMap = JSON.parse(document.getElementById('dept-branch-map').textContent);
+    var assigneeDeptMap = JSON.parse(document.getElementById('assignee-dept-map').textContent);
+    var cascadeAssignee = {{ cascade_assignee|yesno:"true,false" }};
+
+    var branchSelect = document.getElementById('id_branch');
+    var deptSelect = document.getElementById('id_department');
+    var assigneeSelect = document.getElementById('id_assignee');
+
+    var deptWrapper = document.getElementById('field-department');
+    var assigneeWrapper = document.getElementById('field-assignee');
+
+    function filterSelect(select, map, filterValue) {
+        if (!select) return;
+        Array.prototype.forEach.call(select.options, function (opt) {
+            if (!opt.value) { opt.hidden = false; return; }
+            var mapped = map[opt.value];
+            opt.hidden = !!filterValue && String(mapped) !== String(filterValue);
+        });
+        if (select.selectedOptions[0] && select.selectedOptions[0].hidden) {
+            select.value = '';
+        }
+    }
+
+    function toggleWrapper(wrapper, shouldShow) {
+        if (wrapper) wrapper.style.display = shouldShow ? '' : 'none';
+    }
+
+    function updateDepartments() {
+        var branchVal = branchSelect ? branchSelect.value : null;
+        filterSelect(deptSelect, deptBranchMap, branchVal);
+        toggleWrapper(deptWrapper, !!branchVal || !branchSelect);
+        updateAssignees();
+    }
+
+    function updateAssignees() {
+        if (!cascadeAssignee) { toggleWrapper(assigneeWrapper, true); return; }
+        var deptVal = deptSelect ? deptSelect.value : null;
+        filterSelect(assigneeSelect, assigneeDeptMap, deptVal);
+        toggleWrapper(assigneeWrapper, !!deptVal || !deptSelect);
+    }
+
+    if (branchSelect) branchSelect.addEventListener('change', updateDepartments);
+    if (deptSelect) deptSelect.addEventListener('change', updateAssignees);
+
+    updateDepartments();
+});
+</script>
+{% endblock %}
