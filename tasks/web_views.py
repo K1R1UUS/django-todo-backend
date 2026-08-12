@@ -24,7 +24,6 @@ def _task_form_context(form, is_edit, task=None):
         "task": task,
         "department_branch_map": form.department_branch_map,
         "assignee_department_map": form.assignee_department_map,
-        "cascade_assignee": form.cascade_assignee,
         "show_branch": form.show_branch,
         "show_department": form.show_department,
     }

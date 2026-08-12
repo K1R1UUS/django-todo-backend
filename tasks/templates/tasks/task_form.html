@@ -78,7 +78,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     var deptBranchMap = JSON.parse(document.getElementById('dept-branch-map').textContent);
     var assigneeDeptMap = JSON.parse(document.getElementById('assignee-dept-map').textContent);
-    var cascadeAssignee = {{ cascade_assignee|yesno:"true,false" }};
+    var cascadeAssignee = true;
 
     var branchSelect = document.getElementById('id_branch');
     var deptSelect = document.getElementById('id_department');

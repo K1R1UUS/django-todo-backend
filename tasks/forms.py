@@ -2,7 +2,6 @@ from django import forms
 from django.contrib.auth.models import User
 from organizations.models import Branch, Department, Profile
 from .models import Task
-from .permissions import get_user_department
 
 
 class TaskForm(forms.ModelForm):
@@ -29,16 +28,15 @@ class TaskForm(forms.ModelForm):
 
         self.department_branch_map = {}
         self.assignee_department_map = {}
-        self.cascade_assignee = True
         self.show_branch = True
         self.show_department = True
 
         if user.is_staff or user.is_superuser:
-            self.department_branch_map = {d.id: d.branch_id for d in Department.objects.all()}
-            self.cascade_assignee = False
+            all_departments = Department.objects.all()
+            self.department_branch_map = {d.id: d.branch_id for d in all_departments}
+            employees = Profile.objects.filter(department__isnull=False)
+            self.assignee_department_map = {e.user_id: e.department_id for e in employees}
             return
-
-        own_department = get_user_department(user)
 
         if hasattr(user, "headed_branch"):
             branch = user.headed_branch
@@ -55,7 +53,9 @@ class TaskForm(forms.ModelForm):
             self.fields["assignee"].queryset = User.objects.filter(id__in=heads.values_list("head_id", flat=True))
             self.assignee_department_map = {d.head_id: d.id for d in heads}
 
-        elif own_department and own_department.head_id == user.id:
+        elif hasattr(user, "headed_department"):
+            own_department = user.headed_department
+
             self.fields["branch"].widget = forms.HiddenInput()
             self.show_branch = False
 

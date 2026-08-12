@@ -47,7 +47,6 @@ class Department(models.Model):
         verbose_name = "Отдел"
         verbose_name_plural = "Отделы"
         ordering = ["branch", "name"]
-        # один и тот же отдел не может повторяться дважды в одном филиале
         constraints = [
             models.UniqueConstraint(fields=["branch", "name"], name="unique_department_per_branch")
         ]
@@ -55,6 +54,13 @@ class Department(models.Model):
     def __str__(self):
         return f"{self.name} ({self.branch.name})"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.head_id:
+            Profile.objects.update_or_create(
+                user_id=self.head_id,
+                defaults={"department": self},
+            )
 
 class Profile(models.Model):
     """Расширение User — привязка сотрудника к отделу."""

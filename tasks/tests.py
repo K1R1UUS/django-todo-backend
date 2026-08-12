@@ -428,7 +428,7 @@ class TaskAssignmentPermissionTests(APITestCase):
         self.dept_b = Department.objects.create(name="Поддержка", branch=self.branch, head=self.dept_head_b)
         self.other_dept = Department.objects.create(name="Логистика", branch=self.other_branch)
 
-        Profile.objects.create(user=self.dept_head_a, department=self.dept_a)
+        # Profile.objects.create(user=self.dept_head_a, department=self.dept_a)
         Profile.objects.create(user=self.employee, department=self.dept_a)
 
         self.url = "/api/tasks/"
@@ -510,7 +510,7 @@ class TaskVisibilityTests(APITestCase):
         self.dept = Department.objects.create(name="Продажи", branch=self.branch, head=self.dept_head)
         self.other_dept = Department.objects.create(name="Поддержка", branch=self.branch, head=self.other_dept_head)
 
-        Profile.objects.create(user=self.dept_head, department=self.dept)
+        # Profile.objects.create(user=self.dept_head, department=self.dept)
         Profile.objects.create(user=self.employee_a, department=self.dept)
         Profile.objects.create(user=self.employee_b, department=self.other_dept)
 
